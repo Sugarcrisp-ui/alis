@@ -206,7 +206,7 @@ function check_variables() {
     check_variables_list "CUSTOM_SHELL" "$CUSTOM_SHELL" "bash zsh dash fish" "true" "true"
     check_variables_list "DESKTOP_ENVIRONMENT" "$DESKTOP_ENVIRONMENT" "gnome kde xfce mate cinnamon lxde i3-wm i3-gaps deepin budgie bspwm awesome qtile openbox" "false" "true"
     check_variables_boolean "PACKAGES_MULTILIB" "$PACKAGES_MULTILIB"
-    check_variables_boolean "PACKAGES_INSTALL" "$PACKAGES_INSTALL"
+    check_variables_boolean "PACKAGES_PACMAN_INSTALL" "$PACKAGES_PACMAN_INSTALL"
     check_variables_boolean "VAGRANT" "$VAGRANT"
     check_variables_boolean "REBOOT" "$REBOOT"
 }
@@ -1745,10 +1745,10 @@ function desktop_environment_openbox() {
 }
 
 function packages() {
-    if [ "$PACKAGES_INSTALL" == "true" ]; then
+    if [ "$PACKAGES_PACMAN_INSTALL" == "true" ]; then
         USER_NAME="$USER_NAME" \
         USER_PASSWORD="$USER_PASSWORD" \
-        PACKAGES_INSTALL_PIPEWIRE="$PACKAGES_INSTALL_PIPEWIRE" \
+        PACKAGES_PACMAN_INSTALL_PIPEWIRE="$PACKAGES_PACMAN_INSTALL_PIPEWIRE" \
         ./alis-packages.sh
         if [ $? != 0 ]; then
             exit 1
