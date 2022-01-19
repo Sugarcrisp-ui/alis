@@ -3,7 +3,7 @@ set -e
 
 # Arch Linux Install Script Packages (alis-packages) installs software
 # packages.
-# Copyright (C) 2021 picodotdev
+# Copyright (C) 2022 picodotdev
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -207,6 +207,11 @@ function packages_pacman() {
     print_step "packages_pacman()"
 
     if [ "$PACKAGES_PACMAN_INSTALL" == "true" ]; then
+        # CUSTOM_REPOSITORIES="$(echo "$PACKAGES_PACMAN_CUSTOM_REPOSITORIES" | grep -E "^[^#]|\n^$"; exit 0)"
+        # if [ -n "$CUSTOM_REPOSITORIES" ]; then
+        #     execute_sudo "echo -e \"# alis\n$CUSTOM_REPOSITORIES\" >> /etc/pacman.conf"
+        # fi
+
         if [ -n "$PACKAGES_PACMAN" ]; then
             pacman_install "$PACKAGES_PACMAN"
         fi

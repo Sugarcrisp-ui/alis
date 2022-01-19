@@ -53,7 +53,7 @@ For new features, improvements and bugs fill an issue in GitHub or make a pull r
 * **Partition**: no LVM, LVM, LVM on LUKS, GPT on UEFI, MBR on BIOS
 * **File system**: ext4, btrfs (with subvols), xfs, f2fs, reiserfs
 * **Kernels**: linux, linux-lts, linux-hardened, linux-zen
-* **Desktop environment**: GNOME, KDE, XFCE, Mate, Cinnamon, LXDE, i3-wm, i3-gaps, Deepin, Budgie, bspwm
+* **Desktop environment**: GNOME, KDE, XFCE, Mate, Cinnamon, LXDE, i3-wm, i3-gaps, Deepin, Budgie, Bspwm, Awesome, Qtile, Openbox, Leftwm, Dusk
 * **Display managers**: GDM, SDDM, Lightdm, lxdm
 * **Graphics controller**: intel, nvidia and amd with optionally early KMS start. With intel optionally fastboot, hardware video acceleration and framebuffer compression.
 * **Bootloader**: GRUB, rEFInd, systemd-boot
@@ -62,14 +62,14 @@ For new features, improvements and bugs fill an issue in GitHub or make a pull r
 * **Periodic TRIM** for SSD storage
 * Intel and AMD **processors microcode**
 * Optional **swap file**
-* **VirtualBox guest additions**
+* **VirtualBox guest additions** and **VMware tools** support
 * **Kernel compression** and **custom parameters**
 * **Users creation** and **add to sudoers**
 * **systemd units enable or disable**
 * **systemd-homed** support
 * **PipeWire** support
 * **Multilib** support
-* **Arch Linux** common and custom **packages installation**
+* Arch Linux custom **packages installation** and **repositories installation**
 * Flatpak utility installation and **Flatpak packages installation**
 * SDKMAN utility installation and **SDKMAN packages installation**
 * **AUR utility** installation (paru, yay, aurman) and **AUR packages installation**
@@ -85,7 +85,7 @@ For new features, improvements and bugs fill an issue in GitHub or make a pull r
 
 Download and boot from the latest <a href="https://www.archlinux.org/download/">original Arch Linux installation media</a>. After boot use the following commands to start the installation.
 
-Follow the <a href="https://wiki.archlinux.org/title/Arch_Linux">Arch Way</a> of doing things and learn what this script does. This will allow you to know what is happening. 
+Follow the <a href="https://wiki.archlinux.org/title/Arch_Linux">Arch Way</a> of doing things and learn what this script does. This will allow you to know what is happening.
 
 Internet connection is required, with wireless WIFI connection see <a href="https://wiki.archlinux.org/title/Wireless_network_configuration#Wi-Fi_Protected_Access">Wireless_network_configuration</a> to bring up WIFI connection before start the installation.
 
@@ -191,9 +191,13 @@ https://www.archlinux.org/download/
 
 ### Reference
 
+* https://archlinux.org/pacman/pacman.conf.5.html#_repository_sections
+* https://tldp.org/LDP/abs/html/
+* https://tldp.org/LDP/Bash-Beginners-Guide/html/
 * https://wiki.archlinux.org/title/AMDGPU
 * https://wiki.archlinux.org/title/Arch_User_Repository
 * https://wiki.archlinux.org/title/ATI
+* https://wiki.archlinux.org/title/Awesome
 * https://wiki.archlinux.org/title/Bluetooth
 * https://wiki.archlinux.org/title/Bspwm
 * https://wiki.archlinux.org/title/Btrfs
@@ -205,6 +209,7 @@ https://www.archlinux.org/download/
 * https://wiki.archlinux.org/title/Dm-crypt
 * https://wiki.archlinux.org/title/Dm-crypt/Device_encryption
 * https://wiki.archlinux.org/title/Dm-crypt/Encrypting_an_entire_system
+* https://github.com/bakkeby/dusk
 * https://wiki.archlinux.org/title/EFI_System_Partition
 * https://wiki.archlinux.org/title/Ext4
 * https://wiki.archlinux.org/title/F2FS
@@ -213,6 +218,7 @@ https://www.archlinux.org/download/
 * https://wiki.archlinux.org/title/General_recommendations
 * https://wiki.archlinux.org/title/GNOME
 * https://wiki.archlinux.org/title/GRUB
+* https://wiki.archlinux.org/title/Hardware_video_acceleration
 * https://wiki.archlinux.org/title/I3
 * https://wiki.archlinux.org/title/Installation_guide
 * https://wiki.archlinux.org/title/Intel_graphics
@@ -221,6 +227,7 @@ https://www.archlinux.org/download/
 * https://wiki.archlinux.org/title/Kernel_mode_setting
 * https://wiki.archlinux.org/title/Kernel_parameters
 * https://wiki.archlinux.org/title/Kernels
+* https://wiki.archlinux.org/title/LeftWM
 * https://wiki.archlinux.org/title/List_of_applications
 * https://wiki.archlinux.org/title/LVM
 * https://wiki.archlinux.org/title/Main_page
@@ -231,10 +238,12 @@ https://www.archlinux.org/download/
 * https://wiki.archlinux.org/title/NetworkManager
 * https://wiki.archlinux.org/title/Nouveau
 * https://wiki.archlinux.org/title/NVIDIA
+* https://wiki.archlinux.org/title/Openbox
 * https://wiki.archlinux.org/title/Pacman
 * https://wiki.archlinux.org/title/Partitioning
 * https://wiki.archlinux.org/title/Persistent_block_device_naming
 * https://wiki.archlinux.org/title/PipeWire
+* https://wiki.archlinux.org/title/Qtile
 * https://wiki.archlinux.org/title/REFInd
 * https://wiki.archlinux.org/title/Reflector
 * https://wiki.archlinux.org/title/Solid_state_drive/NVMe
@@ -251,6 +260,4 @@ https://www.archlinux.org/download/
 * https://wiki.archlinux.org/title/Xfce
 * https://wiki.archlinux.org/title/XFS
 * https://wiki.archlinux.org/title/Xorg
-* http://tldp.org/LDP/abs/html/
-* http://tldp.org/LDP/Bash-Beginners-Guide/html/
 

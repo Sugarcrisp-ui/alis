@@ -3,7 +3,7 @@ set -e
 
 # Arch Linux Install Script Recovery (alis-recovery) start a recovery for an
 # failed installation or broken system.
-# Copyright (C) 2021 picodotdev
+# Copyright (C) 2022 picodotdev
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -91,6 +91,7 @@ function sanitize_variables() {
     PARTITION_MODE=$(sanitize_variable "$PARTITION_MODE")
     PARTITION_CUSTOMMANUAL_BOOT=$(sanitize_variable "$PARTITION_CUSTOMMANUAL_BOOT")
     PARTITION_CUSTOMMANUAL_ROOT=$(sanitize_variable "$PARTITION_CUSTOMMANUAL_ROOT")
+    FILE_SYSTEM_TYPE=$(sanitize_variable "$FILE_SYSTEM_TYPE")
 }
 
 function sanitize_variable() {
@@ -120,6 +121,7 @@ function check_variables() {
         check_variables_list "PARTITION_MODE" "$PARTITION_MODE" "auto" "true"
     fi
     check_variables_value "PING_HOSTNAME" "$PING_HOSTNAME"
+    check_variables_value "CHROOT" "$CHROOT"
 }
 
 function check_variables_value() {
@@ -176,7 +178,16 @@ function check_variables_size() {
 function warning() {
     echo -e "${LIGHT_BLUE}Welcome to Arch Linux Install Script Recovery${NC}"
     echo ""
-    echo "Once finalized recovery tasks execute following commands: exit, umount -R /mnt, reboot."
+    echo "We will mount your system based on the settings"
+    echo "of the alis-recovery.conf file."
+    echo
+    echo "You will need to arch-chroot into /mnt"
+    echo "arch-chroot /mnt"
+    echo
+    echo "or you can set the parameter CHROOT in the alis-recovery.conf to true."
+    echo
+    echo "Once recovery tasks are finalized execute following commands:"
+    echo "exit, umount -R /mnt and reboot."
     echo ""
     read -p "Do you want to continue? [y/N] " yn
     case $yn in
@@ -231,8 +242,6 @@ function facts() {
     fi
 }
 
-function check_facts() {
-}
 
 function prepare() {
     prepare_partition
@@ -341,9 +350,11 @@ function partition() {
     PARTITION_ROOT_NUMBER="$PARTITION_ROOT"
     PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/sda/}"
     PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/nvme0n1p/}"
+    PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/vda/}"
     PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/mmcblk0p/}"
     PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/sda/}"
     PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/nvme0n1p/}"
+    PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/vda/}"
     PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/mmcblk0p/}"
 
     # luks and lvm
@@ -359,27 +370,61 @@ function partition() {
         DEVICE_ROOT="/dev/mapper/$LVM_VOLUME_GROUP-$LVM_VOLUME_LOGICAL"
     fi
 
-    PARTITION_OPTIONS="defaults"
+    # options
+    PARTITION_OPTIONS_BOOT="defaults"
+    PARTITION_OPTIONS_ROOT="defaults"
 
     if [ "$DEVICE_TRIM" == "true" ]; then
-        PARTITION_OPTIONS="$PARTITION_OPTIONS,noatime"
+        PARTITION_OPTIONS_BOOT="$PARTITION_OPTIONS_BOOT,noatime"
+        PARTITION_OPTIONS_ROOT="$PARTITION_OPTIONS_ROOT,noatime"
+        if [ "$FILE_SYSTEM_TYPE" == "f2fs" ]; then
+            PARTITION_OPTIONS_ROOT="$PARTITION_OPTIONS_ROOT,nodiscard"
+        fi
     fi
 
     # mount
     if [ "$FILE_SYSTEM_TYPE" == "btrfs" ]; then
-        mount -o "subvol=root,$PARTITION_OPTIONS,compress=zstd" "$DEVICE_ROOT" /mnt
-        mount -o "$PARTITION_OPTIONS" "$PARTITION_BOOT" /mnt/boot
-        mount -o "subvol=home,$PARTITION_OPTIONS,compress=zstd" "$DEVICE_ROOT" /mnt/home
-        mount -o "subvol=var,$PARTITION_OPTIONS,compress=zstd" "$DEVICE_ROOT" /mnt/var
-        mount -o "subvol=snapshots,$PARTITION_OPTIONS,compress=zstd" "$DEVICE_ROOT" /mnt/snapshots
+        # mount subvolumes
+        mount -o "subvol=${BTRFS_SUBVOLUME_ROOT[1]},$PARTITION_OPTIONS,compress=zstd" "$DEVICE_ROOT" "/mnt"
+        mkdir -p /mnt/boot
+        mount -o "$PARTITION_OPTIONS_BOOT" "$PARTITION_BOOT" "/mnt/boot"
+        for I in "${BTRFS_SUBVOLUMES_MOUNTPOINTS[@]}"; do
+            IFS=',' SUBVOLUME=($I)
+            if [ ${SUBVOLUME[0]} == "root" ]; then
+                continue
+            fi
+            if [ ${SUBVOLUME[0]} == "swap" -a -z "$SWAP_SIZE" ]; then
+                continue
+            fi
+            if [ ${SUBVOLUME[0]} == "swap" ]; then
+                mkdir -p -m 0755 "/mnt${SUBVOLUME[2]}"
+            else
+                mkdir -p "/mnt${SUBVOLUME[2]}"
+            fi
+            mount -o "subvol=${SUBVOLUME[1]},$PARTITION_OPTIONS_ROOT,compress=zstd" "$DEVICE_ROOT" "/mnt${SUBVOLUME[2]}"
+        done
     else
-        mount -o "$PARTITION_OPTIONS" $DEVICE_ROOT /mnt
-        mount -o "$PARTITION_OPTIONS" $PARTITION_BOOT /mnt/boot
+        mount -o "$PARTITION_OPTIONS_ROOT" "$DEVICE_ROOT" /mnt
+
+        mkdir -p /mnt/boot
+        mount -o "$PARTITION_OPTIONS_BOOT" "$PARTITION_BOOT" /mnt/boot
     fi
 }
 
 function recovery() {
     arch-chroot /mnt
+}
+
+function end() {
+    echo ""
+    echo -e "${GREEN}Recovery started.${NC} You must do an explicit reboot after finalize recovery (exit if in arch-chroot, ./alis-reboot.sh)."
+    echo ""
+}
+
+function do_reboot() {
+    umount -R /mnt/boot
+    umount -R /mnt
+    reboot
 }
 
 function main() {
@@ -389,11 +434,23 @@ function main() {
     warning
     init
     facts
-    check_facts
     prepare
     partition
-    #recovery
+    if [ "$CHROOT" == "true" ]; then
+        recovery
+    fi
+    end
 }
 
 main
-
+echo
+echo "Your system has been mounted in /mnt."
+echo "Chroot into your system with"
+echo "arch-chroot /mnt"
+echo "Once recovery tasks are finalized execute following commands:"
+echo "To get out of arch-chroot"
+echo "     exit"
+echo "To unmount"
+echo "     umount -R /mnt"
+echo "Now you can reboot."
+echo "     reboot"

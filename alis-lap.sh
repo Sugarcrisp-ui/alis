@@ -3,7 +3,7 @@ set -e
 
 # Arch Linux Install Script (alis) installs unattended, automated
 # and customized Arch Linux system.
-# Copyright (C) 2022 picodotdev
+# Copyright (C) 2021 picodotdev
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -110,7 +110,7 @@ function sanitize_variables() {
     CUSTOM_SHELL=$(sanitize_variable "$CUSTOM_SHELL")
     DESKTOP_ENVIRONMENT=$(sanitize_variable "$DESKTOP_ENVIRONMENT")
     DISPLAY_DRIVER=$(sanitize_variable "$DISPLAY_DRIVER")
-    DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION_INTEL=$(sanitize_variable "$DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION_INTEL")
+    DISPLAY_DRIVER_HARDWARE_ACCELERATION_INTEL=$(sanitize_variable "$DISPLAY_DRIVER_HARDWARE_ACCELERATION_INTEL")
     SYSTEMD_UNITS=$(sanitize_variable "$SYSTEMD_UNITS")
 
     for I in "${BTRFS_SUBVOLUMES_MOUNTPOINTS[@]}"; do
@@ -175,8 +175,8 @@ function check_variables() {
     check_variables_boolean "FASTBOOT" "$FASTBOOT"
     check_variables_boolean "FRAMEBUFFER_COMPRESSION" "$FRAMEBUFFER_COMPRESSION"
     check_variables_boolean "DISPLAY_DRIVER_DDX" "$DISPLAY_DRIVER_DDX"
-    check_variables_boolean "DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION" "$DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION"
-    check_variables_list "DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION_INTEL" "$DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION_INTEL" "intel-media-driver libva-intel-driver" "false" "true"
+    check_variables_boolean "DISPLAY_DRIVER_HARDWARE_ACCELERATION" "$DISPLAY_DRIVER_HARDWARE_ACCELERATION"
+    check_variables_list "DISPLAY_DRIVER_HARDWARE_ACCELERATION_INTEL" "$DISPLAY_DRIVER_HARDWARE_ACCELERATION_INTEL" "intel-media-driver libva-intel-driver" "false" "true"
     check_variables_value "TIMEZONE" "$TIMEZONE"
     check_variables_boolean "REFLECTOR" "$REFLECTOR"
     check_variables_value "PACMAN_MIRROR" "$PACMAN_MIRROR"
@@ -202,9 +202,9 @@ function check_variables() {
         fi
     fi
     check_variables_value "HOOKS" "$HOOKS"
-    check_variables_list "BOOTLOADER" "$BOOTLOADER" "auto grub refind systemd" "true" "true"
+    check_variables_list "BOOTLOADER" "$BOOTLOADER" "grub refind systemd" "true" "true"
     check_variables_list "CUSTOM_SHELL" "$CUSTOM_SHELL" "bash zsh dash fish" "true" "true"
-    check_variables_list "DESKTOP_ENVIRONMENT" "$DESKTOP_ENVIRONMENT" "gnome kde xfce mate cinnamon lxde i3-wm i3-gaps deepin budgie bspwm awesome qtile openbox leftwm dusk" "false" "true"
+    check_variables_list "DESKTOP_ENVIRONMENT" "$DESKTOP_ENVIRONMENT" "gnome kde xfce mate cinnamon lxde i3-wm i3-gaps deepin budgie bspwm" "false" "true"
     check_variables_boolean "PACKAGES_MULTILIB" "$PACKAGES_MULTILIB"
     check_variables_boolean "PACKAGES_INSTALL" "$PACKAGES_INSTALL"
     check_variables_boolean "VAGRANT" "$VAGRANT"
@@ -358,14 +358,6 @@ function facts() {
                 DISPLAY_DRIVER="nvidia"
                 ;;
         esac
-    fi
-
-    if [ "$BOOTLOADER" == "auto" ]; then
-        if [ "$BIOS_TYPE" == "uefi" ]; then
-            BOOTLOADER="systemd"
-        elif [ "$BIOS_TYPE" == "bios" ]; then
-            BOOTLOADER="grub"
-        fi
     fi
 
     if [ -n "$(systemd-detect-virt | grep -i oracle)" ]; then
@@ -604,11 +596,9 @@ function partition() {
     PARTITION_ROOT_NUMBER="$PARTITION_ROOT"
     PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/sda/}"
     PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/nvme0n1p/}"
-    PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/vda/}"
     PARTITION_BOOT_NUMBER="${PARTITION_BOOT_NUMBER//\/dev\/mmcblk0p/}"
     PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/sda/}"
     PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/nvme0n1p/}"
-    PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/vda/}"
     PARTITION_ROOT_NUMBER="${PARTITION_ROOT_NUMBER//\/dev\/mmcblk0p/}"
 
     # partition
@@ -718,10 +708,11 @@ function partition() {
             btrfs subvolume create "/mnt/${SUBVOLUME[1]}"
         done
         umount /mnt
+    fi
 
         # mount subvolumes
         mount -o "subvol=${BTRFS_SUBVOLUME_ROOT[1]},$PARTITION_OPTIONS,compress=zstd" "$DEVICE_ROOT" "/mnt"
-        mkdir -p /mnt/boot
+        mkdir "/mnt/boot"
         mount -o "$PARTITION_OPTIONS_BOOT" "$PARTITION_BOOT" "/mnt/boot"
         for I in "${BTRFS_SUBVOLUMES_MOUNTPOINTS[@]}"; do
             IFS=',' SUBVOLUME=($I)
@@ -741,7 +732,7 @@ function partition() {
     else
         mount -o "$PARTITION_OPTIONS_ROOT" "$DEVICE_ROOT" /mnt
 
-        mkdir -p /mnt/boot
+        mkdir /mnt/boot
         mount -o "$PARTITION_OPTIONS_BOOT" "$PARTITION_BOOT" /mnt/boot
     fi
 
@@ -1048,11 +1039,11 @@ function display_driver() {
                 ;;
         esac
     fi
-    if [ "$DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION" == "true" ]; then
+    if [ "$DISPLAY_DRIVER_HARDWARE_ACCELERATION" == "true" ]; then
         case "$DISPLAY_DRIVER" in
             "intel" )
-                if [ -n "$DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION_INTEL" ]; then
-                    PACKAGES_HARDWARE_ACCELERATION="$DISPLAY_DRIVER_HARDWARE_VIDEO_ACCELERATION_INTEL"
+                if [ -n "$DISPLAY_DRIVER_HARDWARE_ACCELERATION_INTEL" ]; then
+                    PACKAGES_HARDWARE_ACCELERATION=$DISPLAY_DRIVER_HARDWARE_ACCELERATION_INTEL
                     PACKAGES_HARDWARE_ACCELERATION_MULTILIB=""
                 fi
                 ;;
@@ -1465,7 +1456,7 @@ Operation = Upgrade
 Target = systemd
 
 [Action]
-Description = Updating systemd-boot
+Description = Updating systemd-boot...
 When = PostTransaction
 Exec = /usr/bin/bootctl update
 EOT
@@ -1667,21 +1658,6 @@ function desktop_environment() {
         "bspwm" )
             desktop_environment_bspwm
             ;;
-        "awesome" )
-            desktop_environment_awesome
-            ;;
-        "qtile" )
-            desktop_environment_qtile
-            ;;
-        "openbox" )
-            desktop_environment_openbox
-                ;;
-        "dusk" )
-                desktop_environment_dusk
-                ;;
-        "leftwm" )
-            desktop_environment_leftwm
-            ;;
     esac
 
     arch-chroot /mnt systemctl set-default graphical.target
@@ -1693,12 +1669,12 @@ function desktop_environment_gnome() {
 }
 
 function desktop_environment_kde() {
-    pacman_install "plasma-meta plasma-wayland-session packagekit-qt5 kde-system-meta kde-utilities-meta kde-graphics-meta kde-multimedia-meta kde-network-meta"
+    pacman_install "plasma-meta plasma-wayland-session kde-system-meta kde-utilities-meta kde-graphics-meta kde-multimedia-meta kde-network-meta"
     arch-chroot /mnt systemctl enable sddm.service
 }
 
 function desktop_environment_xfce() {
-    pacman_install "xfce4 xfce4-goodies lightdm lightdm-gtk-greeter xorg-server pavucontrol"
+    pacman_install "xfce4 xfce4-goodies lightdm lightdm-gtk-greeter xorg-server"
     arch-chroot /mnt systemctl enable lightdm.service
 }
 
@@ -1740,34 +1716,6 @@ function desktop_environment_budgie() {
 
 function desktop_environment_bspwm() {
     pacman_install "bspwm lightdm lightdm-gtk-greeter"
-    arch-chroot /mnt systemctl enable lightdm.service
-}
-
-function desktop_environment_awesome() {
-    pacman_install "awesome vicious xterm lightdm lightdm-gtk-greeter xorg-server"
-    arch-chroot /mnt systemctl enable lightdm.service
-}
-
-function desktop_environment_qtile() {
-    pacman_install "qtile xterm lightdm lightdm-gtk-greeter xorg-server"
-    arch-chroot /mnt systemctl enable lightdm.service
-}
-
-function desktop_environment_openbox() {
-    pacman_install "openbox obconf xterm lightdm lightdm-gtk-greeter xorg-server"
-    arch-chroot /mnt systemctl enable lightdm.service
-}
-
-function desktop_environment_dusk() {
-    #dusk-git in AUR - set in alis-packages.conf
-    pacman_install "dmenu xterm lightdm lightdm-gtk-greeter xorg-server"
-    arch-chroot /mnt systemctl enable lightdm.service
-}
-
-function desktop_environment_leftwm() {
-    #leftwm-git in AUR - set in alis-packages.conf
-    #leftwm-theme-git in AUR - set in alis-packages.conf
-    pacman_install "dmenu xterm lightdm lightdm-gtk-greeter xorg-server"
     arch-chroot /mnt systemctl enable lightdm.service
 }
 
@@ -2076,3 +2024,4 @@ function main() {
 }
 
 main $@
+
